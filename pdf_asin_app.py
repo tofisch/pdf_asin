@@ -70,9 +70,10 @@ if uploaded_files:
         asin_value = st.session_state.get(asin_key, "")
 
         st.write(file.name)
-        cols = st.columns([2, 1])
-        # Shorter text field, no label
-        asin_value_new = cols[0].text_input(
+
+        # Layout: [leer] [Textfeld] [Button] [leer] => Button zentriert neben Feld
+        cols = st.columns([1, 2, 2, 1])
+        asin_value_new = cols[1].text_input(
             label="",
             key=asin_key,
             value=asin_value,
@@ -80,14 +81,19 @@ if uploaded_files:
             placeholder="ASIN",
         )
 
-        # Button right to the text field
+        # Button nur anzeigen, wenn ASIN im Dateinamen gefunden
+        button_key = f"set_asin_{idx}"
+        button_clicked = False
         if asin_from_filename:
-            if cols[1].button("ASIN aus Datei übernehmen", key=f"set_asin_{idx}"):
-                st.session_state[asin_key] = asin_from_filename
-                st.rerun()
-        else:
-            # No button if no ASIN found, just empty space for alignment
-            cols[1].markdown("&nbsp;", unsafe_allow_html=True)
+            button_clicked = cols[2].button(
+                "ASIN aus Datei übernehmen", key=button_key
+            )
+
+        # WICHTIG: Nach allen Widgets und Buttons erst den State setzen!
+        # Nur wenn Button gedrückt wurde, Wert übernehmen und neu laden
+        if button_clicked:
+            st.session_state[asin_key] = asin_from_filename
+            st.rerun()
 
     if st.button("Alle einfügen"):
         if any(not st.session_state.get(f"asin_{idx}", "").strip() for idx in range(len(uploaded_files))):
