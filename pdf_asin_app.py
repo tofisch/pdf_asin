@@ -42,7 +42,7 @@ st.title("ASIN auf PDFs einfügen")
 if st.button("Formular bereinigen"):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
-    st.experimental_rerun()
+    st.rerun()
 
 uploaded_files = st.file_uploader(
     "PDF Dateien hochladen (maximal 10)",
