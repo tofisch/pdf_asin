@@ -1,16 +1,17 @@
 # pdf_asin
 
 Ein Streamlit-Tool, um bis zu zehn PDF-Dateien hochzuladen und auf jede Seite den Text
-`ASIN: <Eingabe>` oben rechts einzufügen. Nach der Verarbeitung können alle Dateien
-als ZIP heruntergeladen werden.
+`ASIN: <Eingabe>` oben rechts einzufügen. Nach der Verarbeitung können die Dateien
+heruntergeladen werden – bei einer Datei direkt als PDF, ab zwei Dateien als ZIP.
 
 ## Features
 
 - Bis zu 10 PDF-Dateien gleichzeitig hochladen und verarbeiten
-- Automatisches Auslesen einer ASIN (`B00*******`) aus dem Dateinamen (optional)
-- Bulk-Eingabe von ASINs (eine pro Zeile, wird den PDFs der Reihe nach zugeordnet)
+- Automatisches Auslesen einer ASIN (`B0XXXXXXXX`) aus dem Dateinamen (sofern vorhanden, wird das Feld automatisch ausgefüllt)
 - Komfortable Bearbeitung der ASINs pro Datei im Interface
-- Einfache Download-Funktion als ZIP-Archiv mit allen bearbeiteten PDFs
+- Einfache Download-Funktion:
+  - Bei einer Datei: Direkt als PDF
+  - Bei mehreren Dateien: ZIP-Archiv mit allen bearbeiteten PDFs
 
 ## Nutzung
 
@@ -26,8 +27,6 @@ als ZIP heruntergeladen werden.
 ### Hinweise
 
 - Die ASIN kann pro Datei individuell angepasst werden.
-- Wird in einem Dateinamen bereits eine ASIN im Format `B00*******` erkannt, füllt
+- Wird in einem Dateinamen bereits eine ASIN im Format `B0XXXXXXXX` erkannt, füllt
   das Tool das zugehörige Eingabefeld automatisch aus.
-- Das Bulk-Feld erlaubt das Einfügen von bis zu zehn ASINs (eine pro Zeile),
-  die in der Reihenfolge den PDFs zugeordnet werden.
-- Nach der Bearbeitung stehen alle Dateien gesammelt als ZIP zum Download bereit.
+- Nach der Bearbeitung steht entweder die einzelne Datei direkt als PDF oder alle Dateien gesammelt als ZIP zum Download bereit.
