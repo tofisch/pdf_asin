@@ -1,9 +1,15 @@
 import io
+import re
 import zipfile
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 
+
+def extract_asin_from_filename(filename: str) -> str | None:
+    """Return ASIN found in the filename if present."""
+    match = re.search(r"(B00[A-Za-z0-9]{7})", filename)
+    return match.group(1) if match else None
 
 def create_overlay(text: str, page) -> io.BytesIO:
     """Create a PDF overlay with the given text for the size of the page."""
@@ -40,6 +46,30 @@ uploaded_files = st.file_uploader(
     "PDF Dateien hochladen (maximal 10)",
     type="pdf",
     accept_multiple_files=True,
+
+    key="uploaded_files",
+)
+
+bulk_input = st.text_area(
+    "ASINs im Bulk (eine ASIN pro Zeile)",
+    key="bulk_input",
+)
+
+if uploaded_files:
+    uploaded_files = uploaded_files[:10]  # Limit auf 10 Dateien
+    bulk_asins = [line.strip() for line in bulk_input.splitlines() if line.strip()]
+    asin_inputs = {}
+    for idx, file in enumerate(uploaded_files):
+        key = f"asin_{idx}"
+        if key not in st.session_state:
+            st.session_state[key] = extract_asin_from_filename(file.name) or ""
+        if idx < len(bulk_asins):
+            st.session_state[key] = bulk_asins[idx]
+        asin_inputs[file.name] = st.text_input(
+            label=f"ASIN für {file.name}",
+            key=key,
+            value=st.session_state[key],
+
 )
 
 if uploaded_files:
@@ -57,9 +87,16 @@ if uploaded_files:
         else:
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zipf:
+
+                for idx, file in enumerate(uploaded_files):
+                    asin = st.session_state[f"asin_{idx}"]
+                    processed = apply_text_to_pdf(
+                        file.getvalue(), asin
+
                 for file in uploaded_files:
                     processed = apply_text_to_pdf(
                         file.getvalue(), asin_inputs[file.name]
+
                     )
                     zipf.writestr(file.name, processed.getvalue())
             zip_buffer.seek(0)
