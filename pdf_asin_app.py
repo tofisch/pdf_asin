@@ -43,7 +43,6 @@ st.title("ASIN auf PDFs einfügen")
 # PDFs löschen Button (setzt FileUploader-Key zurück)
 if st.button("PDFs löschen"):
     st.session_state["uploader_key"] = str(random.randint(1000, 1000000))
-    # Auch alle ASIN-Felder zurücksetzen
     for key in list(st.session_state.keys()):
         if key.startswith("asin_"):
             del st.session_state[key]
@@ -65,38 +64,39 @@ if st.button("Formular bereinigen"):
 
 if uploaded_files:
     uploaded_files = uploaded_files[:10]
-    asin_inputs = {}
 
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
 
-        # Wert für das Feld bestimmen
-        asin_default = st.session_state.get(asin_key, "")
+        # Button zum Übernehmen der ASIN aus dem Dateinamen
+        if asin_from_filename and st.button(
+            f"ASIN aus Dateinamen übernehmen ({asin_from_filename})", key=f"set_asin_{idx}"
+        ):
+            st.session_state[asin_key] = asin_from_filename
+            st.rerun()
+
+        # Default für das Feld: Session State, sonst leer
+        asin_value = st.session_state.get(asin_key, "")
 
         st.write(f"**Datei:** {file.name}")
-        asin_value = st.text_input(
+        st.text_input(
             label=f"ASIN für {file.name}",
             key=asin_key,
-            value=asin_default,
+            value=asin_value,
         )
 
-        if asin_from_filename:
-            if st.button(f"ASIN aus Dateinamen übernehmen ({asin_from_filename})", key=f"set_asin_{idx}"):
-                # Wert NUR per Button setzen!
-                st.session_state[asin_key] = asin_from_filename
-                st.rerun()
-        else:
+        if not asin_from_filename:
             st.caption("Keine ASIN im Dateinamen gefunden.")
 
     if st.button("Alle einfügen"):
-        if any(not st.session_state[f"asin_{idx}"].strip() for idx in range(len(uploaded_files))):
+        if any(not st.session_state.get(f"asin_{idx}", "").strip() for idx in range(len(uploaded_files))):
             st.error("Bitte alle Freitextfelder ausfüllen.")
         else:
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zipf:
                 for idx, file in enumerate(uploaded_files):
-                    asin = st.session_state[f"asin_{idx}"]
+                    asin = st.session_state.get(f"asin_{idx}", "")
                     processed = apply_text_to_pdf(file.getvalue(), asin)
                     zipf.writestr(file.name, processed.getvalue())
             zip_buffer.seek(0)
