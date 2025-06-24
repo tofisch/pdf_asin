@@ -94,7 +94,7 @@ if uploaded_files:
         if asin_from_filename:
             if cols[2].button("ASIN aus Datei übernehmen", key=f"btn_{btn_key}"):
                 st.session_state[btn_key] = True
-                st.experimental_rerun()
+                st.rerun()
         else:
             cols[2].markdown("&nbsp;", unsafe_allow_html=True)
 
