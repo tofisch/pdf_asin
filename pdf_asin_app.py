@@ -4,10 +4,10 @@ import zipfile
 import streamlit as st
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
+import random
 
 def extract_asin_from_filename(filename: str) -> str:
-    """Return ASIN found at the end or anywhere in the filename if present."""
-    # Suche nach der letzten passenden ASIN
+    """Return the last ASIN found in the filename if present."""
     matches = list(re.finditer(r"B00[A-Za-z0-9]{7}", filename))
     return matches[-1].group(0) if matches else ""
 
@@ -37,19 +37,26 @@ def apply_text_to_pdf(pdf_bytes: bytes, text: str) -> io.BytesIO:
     output.seek(0)
     return output
 
+# PDF Uploader Reset-Mechanismus per Key
+if "uploader_key" not in st.session_state:
+    st.session_state["uploader_key"] = str(random.randint(1000, 1000000))
+
 st.title("ASIN auf PDFs einfügen")
 
-# PDFs löschen Button
+# PDFs löschen Button (setzt FileUploader-Key zurück)
 if st.button("PDFs löschen"):
-    if "uploaded_files" in st.session_state:
-        del st.session_state["uploaded_files"]
+    st.session_state["uploader_key"] = str(random.randint(1000, 1000000))
+    # Auch alle ASIN-Felder zurücksetzen
+    for key in list(st.session_state.keys()):
+        if key.startswith("asin_"):
+            del st.session_state[key]
     st.rerun()
 
 uploaded_files = st.file_uploader(
     "PDF Dateien hochladen (maximal 10)",
     type="pdf",
     accept_multiple_files=True,
-    key="uploaded_files",
+    key=st.session_state["uploader_key"],
 )
 
 # Formular-Reset-Button (bereinigt nur ASIN-Felder)
@@ -66,9 +73,11 @@ if uploaded_files:
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
-        # Initiiere das Feld immer mit der ASIN aus dem Dateinamen, wenn Feld leer oder existiert nicht
+
+        # Wenn das Feld nicht existiert oder leer ist (z.B. nach Formular bereinigen oder nach Upload), befülle es neu
         if asin_key not in st.session_state or not st.session_state[asin_key]:
             st.session_state[asin_key] = asin_from_filename
+
         asin_inputs[file.name] = st.text_input(
             label=f"ASIN für {file.name}",
             key=asin_key,
