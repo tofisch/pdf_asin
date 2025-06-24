@@ -74,15 +74,24 @@ if uploaded_files:
         asin_key = f"asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
 
-        # Wenn das Feld nicht existiert oder leer ist (z.B. nach Formular bereinigen oder nach Upload), befülle es neu
-        if asin_key not in st.session_state or not st.session_state[asin_key]:
-            st.session_state[asin_key] = asin_from_filename
+        # Initialisiere das Feld nur, wenn noch nicht vorhanden (niemals automatisch mit Dateinamen überschreiben)
+        if asin_key not in st.session_state:
+            st.session_state[asin_key] = ""
 
+        # Layout für PDF-Datei und zugehörige ASIN
+        st.write(f"**Datei:** {file.name}")
         asin_inputs[file.name] = st.text_input(
             label=f"ASIN für {file.name}",
             key=asin_key,
             value=st.session_state[asin_key],
         )
+        # Button zum Übernehmen der ASIN aus dem Dateinamen
+        if asin_from_filename:
+            if st.button(f"ASIN aus Dateinamen übernehmen ({asin_from_filename})", key=f"set_asin_{idx}"):
+                st.session_state[asin_key] = asin_from_filename
+                st.rerun()
+        else:
+            st.caption("Keine ASIN im Dateinamen gefunden.")
 
     if st.button("Alle einfügen"):
         if any(not st.session_state[f"asin_{idx}"].strip() for idx in range(len(uploaded_files))):
