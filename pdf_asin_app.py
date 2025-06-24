@@ -5,7 +5,6 @@ import streamlit as st
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 
-
 def extract_asin_from_filename(filename: str) -> str | None:
     """Return ASIN found in the filename if present."""
     match = re.search(r"(B00[A-Za-z0-9]{7})", filename)
@@ -17,12 +16,10 @@ def create_overlay(text: str, page) -> io.BytesIO:
     width = float(page.mediabox.width)
     height = float(page.mediabox.height)
     can = canvas.Canvas(packet, pagesize=(width, height))
-    # Position near the top-right corner with some margin
     can.drawString(width - 150, height - 30, text)
     can.save()
     packet.seek(0)
     return packet
-
 
 def apply_text_to_pdf(pdf_bytes: bytes, text: str) -> io.BytesIO:
     """Add text to every page of the given PDF and return the modified PDF."""
@@ -39,14 +36,18 @@ def apply_text_to_pdf(pdf_bytes: bytes, text: str) -> io.BytesIO:
     output.seek(0)
     return output
 
-
 st.title("ASIN auf PDFs einfügen")
+
+# Formular-Reset-Button
+if st.button("Formular bereinigen"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.experimental_rerun()
 
 uploaded_files = st.file_uploader(
     "PDF Dateien hochladen (maximal 10)",
     type="pdf",
     accept_multiple_files=True,
-
     key="uploaded_files",
 )
 
@@ -69,16 +70,6 @@ if uploaded_files:
             label=f"ASIN für {file.name}",
             key=key,
             value=st.session_state[key],
-
-)
-
-if uploaded_files:
-    uploaded_files = uploaded_files[:10]  # Limit to 10 Dateien
-    asin_inputs = {}
-    for file in uploaded_files:
-        asin_inputs[file.name] = st.text_input(
-            label=f"ASIN für {file.name}",
-            key=file.name,
         )
 
     if st.button("Alle einfügen"):
@@ -87,17 +78,9 @@ if uploaded_files:
         else:
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zipf:
-
                 for idx, file in enumerate(uploaded_files):
                     asin = st.session_state[f"asin_{idx}"]
-                    processed = apply_text_to_pdf(
-                        file.getvalue(), asin
-
-                for file in uploaded_files:
-                    processed = apply_text_to_pdf(
-                        file.getvalue(), asin_inputs[file.name]
-
-                    )
+                    processed = apply_text_to_pdf(file.getvalue(), asin)
                     zipf.writestr(file.name, processed.getvalue())
             zip_buffer.seek(0)
             st.success("Verarbeitung abgeschlossen.")
@@ -107,3 +90,5 @@ if uploaded_files:
                 file_name="asins.zip",
                 mime="application/zip",
             )
+else:
+    st.info("Bitte lade bis zu 10 PDF-Dateien hoch.")
