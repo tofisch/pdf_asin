@@ -77,7 +77,7 @@ if uploaded_files:
 
         # --- Block: Dateiname, kleiner Abstand, Freitextfeld, Button, Leerzeile ---
         st.markdown(f"{file.name}")  # Direkt über das Feld, ohne Leerzeile
-        st.markdown('<div style="height:2px"></div>', unsafe_allow_html=True)  # Mini-Abstand
+        st.markdown('<div style="height:0px"></div>', unsafe_allow_html=True)  # Mini-Abstand
 
         asin_value = st.session_state.get(asin_key, "")
         st.text_input(
