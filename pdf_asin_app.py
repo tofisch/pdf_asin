@@ -65,24 +65,34 @@ if st.button("Formular bereinigen"):
 if uploaded_files:
     uploaded_files = uploaded_files[:10]
 
+    # Zuerst prüfen wir, ob ein "ASIN aus Datei übernehmen" Button geklickt wurde
+    for idx, file in enumerate(uploaded_files):
+        btn_key = f"btn_asin_{idx}"
+        asin_key = f"asin_{idx}"
+        if btn_key in st.session_state and st.session_state[btn_key]:
+            st.session_state[asin_key] = extract_asin_from_filename(file.name)
+            del st.session_state[btn_key]  # Button-Status zurücksetzen
+            st.rerun()
+
+    # Dann rendern wir die Felder
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
+        btn_key = f"btn_asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
-        asin_value = st.session_state.get(asin_key, "")
 
         st.write(file.name)
-        asin_value_new = st.text_input(
+        asin_value = st.text_input(
             label="",
             key=asin_key,
-            value=asin_value,
+            value=st.session_state.get(asin_key, ""),
             max_chars=10,
             placeholder="ASIN",
         )
 
         # Button unter dem Feld, nur wenn ASIN im Dateinamen gefunden
         if asin_from_filename:
-            if st.button("ASIN aus Datei übernehmen", key=f"btn_{asin_key}"):
-                st.session_state[asin_key] = asin_from_filename
+            if st.button("ASIN aus Datei übernehmen", key=btn_key):
+                st.session_state[btn_key] = True  # Markiere Button als geklickt
                 st.rerun()
         else:
             st.markdown("&nbsp;", unsafe_allow_html=True)
@@ -94,7 +104,7 @@ if uploaded_files:
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zipf:
                 for idx, file in enumerate(uploaded_files):
-                    asin = st.session_state.get(f"asin_{idx}", "")
+                    asin = st.session_state[f"asin_{idx}"]
                     processed = apply_text_to_pdf(file.getvalue(), asin)
                     zipf.writestr(file.name, processed.getvalue())
             zip_buffer.seek(0)
