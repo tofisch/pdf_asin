@@ -44,7 +44,7 @@ st.title("ASIN auf PDFs einfügen")
 if st.button("PDFs löschen"):
     st.session_state["uploader_key"] = str(random.randint(1000, 1000000))
     for key in list(st.session_state.keys()):
-        if key.startswith("asin_") or key.startswith("btn_asin_"):
+        if key.startswith("asin_") or key.startswith("trigger_asin_"):
             del st.session_state[key]
     st.rerun()
 
@@ -55,28 +55,30 @@ uploaded_files = st.file_uploader(
     key=st.session_state["uploader_key"],
 )
 
-# --- BUTTON-AUSWERTUNG VOR DEM RENDERN DER WIDGETS ---
+# --- BUTTON-TRIGGER-AUSWERTUNG VOR DEM RENDERN DER WIDGETS ---
 if uploaded_files:
     uploaded_files = uploaded_files[:10]
     for idx, file in enumerate(uploaded_files):
-        btn_key = f"btn_asin_{idx}"
+        trigger_key = f"trigger_asin_{idx}"
         asin_key = f"asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
         # Prüfe, ob Button für dieses Feld geklickt wurde
-        if st.session_state.get(btn_key, False):
+        if st.session_state.get(trigger_key, False):
             st.session_state[asin_key] = asin_from_filename
-            st.session_state[btn_key] = False
+            st.session_state[trigger_key] = False
             st.rerun()
 
 if uploaded_files:
     uploaded_files = uploaded_files[:10]
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
-        btn_key = f"btn_asin_{idx}"
+        trigger_key = f"trigger_asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
 
-        # --- Block: Dateiname, Freitextfeld, Button, Leerzeile ---
+        # --- Block: Dateiname, kleiner Abstand, Freitextfeld, Button, Leerzeile ---
         st.markdown(f"{file.name}")  # Direkt über das Feld, ohne Leerzeile
+        st.markdown('<div style="height:2px"></div>', unsafe_allow_html=True)  # Mini-Abstand
+
         asin_value = st.session_state.get(asin_key, "")
         st.text_input(
             label="",
@@ -86,8 +88,8 @@ if uploaded_files:
             placeholder="ASIN",
         )
         if asin_from_filename:
-            if st.button("ASIN aus Datei übernehmen", key=btn_key):
-                st.session_state[btn_key] = True
+            if st.button("ASIN aus Datei übernehmen", key=f"btn_asin_{idx}"):
+                st.session_state[trigger_key] = True
                 st.rerun()
         else:
             st.markdown("&nbsp;", unsafe_allow_html=True)
