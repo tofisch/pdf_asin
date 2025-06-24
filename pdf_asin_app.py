@@ -80,19 +80,33 @@ if uploaded_files:
         if any(not st.session_state.get(f"asin_{idx}", "").strip() for idx in range(len(uploaded_files))):
             st.error("Bitte alle Freitextfelder ausfüllen.")
         else:
-            zip_buffer = io.BytesIO()
-            with zipfile.ZipFile(zip_buffer, "w") as zipf:
-                for idx, file in enumerate(uploaded_files):
-                    asin = st.session_state.get(f"asin_{idx}", "")
-                    processed = apply_text_to_pdf(file.getvalue(), asin)
-                    zipf.writestr(file.name, processed.getvalue())
-            zip_buffer.seek(0)
-            st.success("Verarbeitung abgeschlossen.")
-            st.download_button(
-                label="Alle Dateien herunterladen",
-                data=zip_buffer,
-                file_name="asins.zip",
-                mime="application/zip",
-            )
+            if len(uploaded_files) == 1:
+                # Nur eine Datei -> Direkt als PDF zum Download anbieten
+                file = uploaded_files[0]
+                asin = st.session_state.get("asin_0", "")
+                processed = apply_text_to_pdf(file.getvalue(), asin)
+                st.success("Verarbeitung abgeschlossen.")
+                st.download_button(
+                    label="Datei herunterladen",
+                    data=processed.getvalue(),
+                    file_name=file.name,
+                    mime="application/pdf",
+                )
+            else:
+                # Mehrere Dateien -> ZIP anbieten
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w") as zipf:
+                    for idx, file in enumerate(uploaded_files):
+                        asin = st.session_state.get(f"asin_{idx}", "")
+                        processed = apply_text_to_pdf(file.getvalue(), asin)
+                        zipf.writestr(file.name, processed.getvalue())
+                zip_buffer.seek(0)
+                st.success("Verarbeitung abgeschlossen.")
+                st.download_button(
+                    label="Alle Dateien herunterladen",
+                    data=zip_buffer,
+                    file_name="asins.zip",
+                    mime="application/zip",
+                )
 else:
     st.info("Bitte lade bis zu 10 PDF-Dateien hoch.")
