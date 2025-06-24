@@ -5,7 +5,7 @@ import streamlit as st
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 
-def extract_asin_from_filename(filename: str) -> str | None:
+def extract_asin_from_filename(filename: str) -> str:
     """Return ASIN found in the filename if present."""
     match = re.search(r"(B00[A-Za-z0-9]{7})", filename)
     return match.group(1) if match else ""
@@ -40,8 +40,10 @@ st.title("ASIN auf PDFs einfügen")
 
 # Formular-Reset-Button
 if st.button("Formular bereinigen"):
+    # Lösche nur relevante Keys (inklusive hochgeladene Dateien)
     for key in list(st.session_state.keys()):
-        del st.session_state[key]
+        if key.startswith("asin_") or key == "uploaded_files":
+            del st.session_state[key]
     st.rerun()
 
 uploaded_files = st.file_uploader(
@@ -51,45 +53,20 @@ uploaded_files = st.file_uploader(
     key="uploaded_files",
 )
 
-bulk_input = st.text_area(
-    "ASINs im Bulk (eine ASIN pro Zeile)",
-    key="bulk_input",
-)
-
 if uploaded_files:
     uploaded_files = uploaded_files[:10]  # Limit auf 10 Dateien
-    bulk_asins = [line.strip() for line in bulk_input.splitlines() if line.strip()]
     asin_inputs = {}
 
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
-
-        # Reihenfolge: Bulk > Dateiname > Session State
         asin_from_filename = extract_asin_from_filename(file.name)
-        asin_from_bulk = bulk_asins[idx] if idx < len(bulk_asins) else ""
-        # Wenn kein Bulk, dann Filename, sonst Bulk
-        suggested_asin = asin_from_bulk or asin_from_filename
-
-        # Immer das Feld mit Dateinamen/ASIN initialisieren, wenn leer
-        asin_value = st.session_state.get(asin_key, "")
-
-        # Wenn Session State leer oder Datei wurde neu hochgeladen, dann initialisieren
-        if not asin_value:
-            asin_value = suggested_asin
-            st.session_state[asin_key] = asin_value
-        # Wenn Bulk überschrieben wird, aktualisiere Field
-        elif asin_from_bulk and asin_value != asin_from_bulk:
-            asin_value = asin_from_bulk
-            st.session_state[asin_key] = asin_value
-        # Wenn Datei neu hochgeladen wurde und Session State Wert passt nicht zum Filename, aktualisiere
-        elif not asin_from_bulk and asin_from_filename and asin_value != asin_from_filename:
-            asin_value = asin_from_filename
-            st.session_state[asin_key] = asin_value
+        # Bei jedem Upload das Feld wieder initialisieren (auch bei erneuten Uploads)
+        st.session_state[asin_key] = asin_from_filename
 
         asin_inputs[file.name] = st.text_input(
             label=f"ASIN für {file.name}",
             key=asin_key,
-            value=asin_value,
+            value=st.session_state[asin_key],
         )
 
     if st.button("Alle einfügen"):
