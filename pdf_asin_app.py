@@ -12,7 +12,6 @@ def extract_asin_from_filename(filename: str) -> str:
     return matches[-1].group(0) if matches else ""
 
 def create_overlay(text: str, page) -> io.BytesIO:
-    """Create a PDF overlay with the given text for the size of the page."""
     packet = io.BytesIO()
     width = float(page.mediabox.width)
     height = float(page.mediabox.height)
@@ -23,7 +22,6 @@ def create_overlay(text: str, page) -> io.BytesIO:
     return packet
 
 def apply_text_to_pdf(pdf_bytes: bytes, text: str) -> io.BytesIO:
-    """Add text to every page of the given PDF and return the modified PDF."""
     reader = PdfReader(io.BytesIO(pdf_bytes))
     writer = PdfWriter()
     prefix_text = f"ASIN: {text}"
@@ -37,7 +35,6 @@ def apply_text_to_pdf(pdf_bytes: bytes, text: str) -> io.BytesIO:
     output.seek(0)
     return output
 
-# PDF Uploader Reset-Mechanismus per Key
 if "uploader_key" not in st.session_state:
     st.session_state["uploader_key"] = str(random.randint(1000, 1000000))
 
@@ -67,27 +64,26 @@ if st.button("Formular bereinigen"):
     st.rerun()
 
 if uploaded_files:
-    uploaded_files = uploaded_files[:10]  # Limit auf 10 Dateien
+    uploaded_files = uploaded_files[:10]
     asin_inputs = {}
 
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
 
-        # Initialisiere das Feld nur, wenn noch nicht vorhanden (niemals automatisch mit Dateinamen überschreiben)
-        if asin_key not in st.session_state:
-            st.session_state[asin_key] = ""
+        # Wert für das Feld bestimmen
+        asin_default = st.session_state.get(asin_key, "")
 
-        # Layout für PDF-Datei und zugehörige ASIN
         st.write(f"**Datei:** {file.name}")
-        asin_inputs[file.name] = st.text_input(
+        asin_value = st.text_input(
             label=f"ASIN für {file.name}",
             key=asin_key,
-            value=st.session_state[asin_key],
+            value=asin_default,
         )
-        # Button zum Übernehmen der ASIN aus dem Dateinamen
+
         if asin_from_filename:
             if st.button(f"ASIN aus Dateinamen übernehmen ({asin_from_filename})", key=f"set_asin_{idx}"):
+                # Wert NUR per Button setzen!
                 st.session_state[asin_key] = asin_from_filename
                 st.rerun()
         else:
