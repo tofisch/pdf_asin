@@ -44,7 +44,7 @@ st.title("ASIN auf PDFs einfügen")
 if st.button("PDFs löschen"):
     st.session_state["uploader_key"] = str(random.randint(1000, 1000000))
     for key in list(st.session_state.keys()):
-        if key.startswith("asin_"):
+        if key.startswith("asin_") or key.startswith("btn_asin_"):
             del st.session_state[key]
     st.rerun()
 
@@ -55,47 +55,43 @@ uploaded_files = st.file_uploader(
     key=st.session_state["uploader_key"],
 )
 
-# Formular-Reset-Button (bereinigt nur ASIN-Felder)
-if st.button("Formular bereinigen"):
-    for key in list(st.session_state.keys()):
-        if key.startswith("asin_"):
-            del st.session_state[key]
-    st.rerun()
-
+# --- BUTTON-AUSWERTUNG VOR DEM RENDERN DER WIDGETS ---
 if uploaded_files:
     uploaded_files = uploaded_files[:10]
-
-    # Zuerst prüfen wir, ob ein "ASIN aus Datei übernehmen" Button geklickt wurde
     for idx, file in enumerate(uploaded_files):
         btn_key = f"btn_asin_{idx}"
         asin_key = f"asin_{idx}"
-        if btn_key in st.session_state and st.session_state[btn_key]:
-            st.session_state[asin_key] = extract_asin_from_filename(file.name)
-            del st.session_state[btn_key]  # Button-Status zurücksetzen
+        asin_from_filename = extract_asin_from_filename(file.name)
+        # Prüfe, ob Button für dieses Feld geklickt wurde
+        if st.session_state.get(btn_key, False):
+            st.session_state[asin_key] = asin_from_filename
+            st.session_state[btn_key] = False
             st.rerun()
 
-    # Dann rendern wir die Felder
+if uploaded_files:
+    uploaded_files = uploaded_files[:10]
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
         btn_key = f"btn_asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
 
-        st.write(file.name)
-        asin_value = st.text_input(
+        # --- Block: Dateiname, Freitextfeld, Button, Leerzeile ---
+        st.markdown(f"{file.name}")  # Direkt über das Feld, ohne Leerzeile
+        asin_value = st.session_state.get(asin_key, "")
+        st.text_input(
             label="",
             key=asin_key,
-            value=st.session_state.get(asin_key, ""),
+            value=asin_value,
             max_chars=10,
             placeholder="ASIN",
         )
-
-        # Button unter dem Feld, nur wenn ASIN im Dateinamen gefunden
         if asin_from_filename:
             if st.button("ASIN aus Datei übernehmen", key=btn_key):
-                st.session_state[btn_key] = True  # Markiere Button als geklickt
+                st.session_state[btn_key] = True
                 st.rerun()
         else:
             st.markdown("&nbsp;", unsafe_allow_html=True)
+        st.markdown("")  # Leerzeile als Blocktrenner
 
     if st.button("Alle einfügen"):
         if any(not st.session_state.get(f"asin_{idx}", "").strip() for idx in range(len(uploaded_files))):
@@ -104,7 +100,7 @@ if uploaded_files:
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "w") as zipf:
                 for idx, file in enumerate(uploaded_files):
-                    asin = st.session_state[f"asin_{idx}"]
+                    asin = st.session_state.get(f"asin_{idx}", "")
                     processed = apply_text_to_pdf(file.getvalue(), asin)
                     zipf.writestr(file.name, processed.getvalue())
             zip_buffer.seek(0)
