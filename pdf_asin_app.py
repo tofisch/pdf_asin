@@ -7,8 +7,9 @@ from reportlab.pdfgen import canvas
 import random
 
 def extract_asin_from_filename(filename: str) -> str:
-    matches = list(re.finditer(r"B0[A-Za-z0-9]{7}", filename))
-    return matches[-1].group(0) if matches else ""
+    # Exakt 10-stellige ASIN: B0XXXXXXXX
+    match = re.search(r"B0[A-Za-z0-9]{8}", filename)
+    return match.group(0) if match else ""
 
 def create_overlay(text: str, page) -> io.BytesIO:
     packet = io.BytesIO()
@@ -43,7 +44,7 @@ st.title("ASIN auf PDFs einfügen")
 if st.button("PDFs löschen"):
     st.session_state["uploader_key"] = str(random.randint(1000, 1000000))
     for key in list(st.session_state.keys()):
-        if key.startswith("asin_") or key.startswith("asin_btn_"):
+        if key.startswith("asin_"):
             del st.session_state[key]
     st.rerun()
 
@@ -57,46 +58,34 @@ uploaded_files = st.file_uploader(
 # Formular-Reset-Button (bereinigt nur ASIN-Felder)
 if st.button("Formular bereinigen"):
     for key in list(st.session_state.keys()):
-        if key.startswith("asin_") or key.startswith("asin_btn_"):
+        if key.startswith("asin_"):
             del st.session_state[key]
     st.rerun()
 
 if uploaded_files:
     uploaded_files = uploaded_files[:10]
 
-    # --- Button-Trigger-Mechanik ---
-    # Prüfe: Wurde bei einem der Einträge ein Buttonklick getriggert? Dann setze den ASIN-Wert und lösche den Trigger.
-    for idx, file in enumerate(uploaded_files):
-        btn_key = f"asin_btn_{idx}"
-        asin_key = f"asin_{idx}"
-        asin_from_filename = extract_asin_from_filename(file.name)
-        if st.session_state.get(btn_key, False):
-            st.session_state[asin_key] = asin_from_filename
-            st.session_state[btn_key] = False
-            st.rerun()
-
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
-        btn_key = f"asin_btn_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
         asin_value = st.session_state.get(asin_key, "")
-        st.write(file.name)
 
-        # 3-Spalten-Layout: [leer] [Textfeld] [Button]
-        cols = st.columns([1, 2, 2, 1])
-        asin_value_new = cols[1].text_input(
+        st.write(file.name)
+        asin_value_new = st.text_input(
             label="",
             key=asin_key,
             value=asin_value,
-            max_chars=20,
+            max_chars=10,
             placeholder="ASIN",
         )
+
+        # Button unter dem Feld, nur wenn ASIN im Dateinamen gefunden
         if asin_from_filename:
-            if cols[2].button("ASIN aus Datei übernehmen", key=f"btn_{btn_key}"):
-                st.session_state[btn_key] = True
+            if st.button("ASIN aus Datei übernehmen", key=f"btn_{asin_key}"):
+                st.session_state[asin_key] = asin_from_filename
                 st.rerun()
         else:
-            cols[2].markdown("&nbsp;", unsafe_allow_html=True)
+            st.markdown("&nbsp;", unsafe_allow_html=True)
 
     if st.button("Alle einfügen"):
         if any(not st.session_state.get(f"asin_{idx}", "").strip() for idx in range(len(uploaded_files))):
