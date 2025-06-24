@@ -7,7 +7,6 @@ from reportlab.pdfgen import canvas
 import random
 
 def extract_asin_from_filename(filename: str) -> str:
-    """Return the last ASIN found in the filename if present."""
     matches = list(re.finditer(r"B0[A-Za-z0-9]{7}", filename))
     return matches[-1].group(0) if matches else ""
 
@@ -68,26 +67,27 @@ if uploaded_files:
     for idx, file in enumerate(uploaded_files):
         asin_key = f"asin_{idx}"
         asin_from_filename = extract_asin_from_filename(file.name)
-
-        # Button zum Übernehmen der ASIN aus dem Dateinamen
-        if asin_from_filename and st.button(
-            f"ASIN aus Dateinamen übernehmen ({asin_from_filename})", key=f"set_asin_{idx}"
-        ):
-            st.session_state[asin_key] = asin_from_filename
-            st.rerun()
-
-        # Default für das Feld: Session State, sonst leer
         asin_value = st.session_state.get(asin_key, "")
 
-        st.write(f"**Datei:** {file.name}")
-        st.text_input(
-            label=f"ASIN für {file.name}",
+        st.write(file.name)
+        cols = st.columns([2, 1])
+        # Shorter text field, no label
+        asin_value_new = cols[0].text_input(
+            label="",
             key=asin_key,
             value=asin_value,
+            max_chars=20,
+            placeholder="ASIN",
         )
 
-        if not asin_from_filename:
-            st.caption("Keine ASIN im Dateinamen gefunden.")
+        # Button right to the text field
+        if asin_from_filename:
+            if cols[1].button("ASIN aus Datei übernehmen", key=f"set_asin_{idx}"):
+                st.session_state[asin_key] = asin_from_filename
+                st.rerun()
+        else:
+            # No button if no ASIN found, just empty space for alignment
+            cols[1].markdown("&nbsp;", unsafe_allow_html=True)
 
     if st.button("Alle einfügen"):
         if any(not st.session_state.get(f"asin_{idx}", "").strip() for idx in range(len(uploaded_files))):
