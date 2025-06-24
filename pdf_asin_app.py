@@ -40,6 +40,7 @@ st.title("ASIN auf PDFs einfügen")
 
 # Formular-Reset-Button
 if st.button("Formular bereinigen"):
+    # Lösche alle relevanten Keys inkl. Dateien
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
@@ -60,16 +61,25 @@ if uploaded_files:
     uploaded_files = uploaded_files[:10]  # Limit auf 10 Dateien
     bulk_asins = [line.strip() for line in bulk_input.splitlines() if line.strip()]
     asin_inputs = {}
+
     for idx, file in enumerate(uploaded_files):
-        key = f"asin_{idx}"
-        if key not in st.session_state:
-            st.session_state[key] = extract_asin_from_filename(file.name) or ""
-        if idx < len(bulk_asins):
-            st.session_state[key] = bulk_asins[idx]
+        asin_key = f"asin_{idx}"
+
+        # Falls kein Wert im Session State, von Dateiname extrahieren (nur beim allerersten Anzeigen)
+        if asin_key not in st.session_state:
+            asin_from_filename = extract_asin_from_filename(file.name) or ""
+            # Bulk-ASIN überschreibt, falls vorhanden
+            asin_value = bulk_asins[idx] if idx < len(bulk_asins) else asin_from_filename
+            st.session_state[asin_key] = asin_value
+        else:
+            # Bulk-ASIN überschreibt bei jeder Änderung
+            if idx < len(bulk_asins):
+                st.session_state[asin_key] = bulk_asins[idx]
+
         asin_inputs[file.name] = st.text_input(
             label=f"ASIN für {file.name}",
-            key=key,
-            value=st.session_state[key],
+            key=asin_key,
+            value=st.session_state[asin_key],
         )
 
     if st.button("Alle einfügen"):
