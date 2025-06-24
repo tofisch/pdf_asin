@@ -8,7 +8,7 @@ import random
 
 def extract_asin_from_filename(filename: str) -> str:
     """Return the last ASIN found in the filename if present."""
-    matches = list(re.finditer(r"B00[A-Za-z0-9]{7}", filename))
+    matches = list(re.finditer(r"B0[A-Za-z0-9]{7}", filename))
     return matches[-1].group(0) if matches else ""
 
 def create_overlay(text: str, page) -> io.BytesIO:
